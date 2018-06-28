@@ -1,0 +1,10 @@
+psa-crypto/configs/*
+psa-crypto/doxygen/*
+psa-crypto/include/mbedtls/*
+psa-crypto/library/*
+psa-crypto/programs/*
+psa-crypto/scripts/*
+psa-crypto/tests/*
+psa-crypto/visualc/*
+psa-crypto/yotta/*
+

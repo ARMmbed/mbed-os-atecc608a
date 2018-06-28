@@ -1,0 +1,6 @@
+{
+    "name": "atecc608a",
+    "macros": [
+        "MBEDTLS_CONFIG_FILE=\"mbedtls/config.h\""
+    ]
+}

@@ -183,6 +183,4 @@ psa_status_t psa_asymmetric_verify( psa_key_slot_t key,
     return atca_opaque_asymmetric.p_verify(key, alg, hash, hash_length, signature, signature_length);
 }
 
-/* XXX How can you import an opaque key into ATECC608A? */
-
 };

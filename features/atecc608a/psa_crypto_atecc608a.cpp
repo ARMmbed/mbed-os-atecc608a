@@ -48,17 +48,12 @@ psa_status_t psa_asymmetric_sign( psa_key_slot_t key,
                                   psa_algorithm_t alg,
                                   const uint8_t *hash,
                                   size_t hash_length,
-                                  const uint8_t *salt,
-                                  size_t salt_length,
                                   uint8_t *signature,
                                   size_t signature_size,
                                   size_t *signature_length )
 {
     ATCAError atca_err = ATCA_SUCCESS;
     ATCAKey *atca_key = NULL;
-
-    (void) salt;
-    (void) salt_length;
 
     if( ! PSA_ALG_IS_ECDSA( alg ) )
         return( PSA_ERROR_INVALID_ARGUMENT );
@@ -78,16 +73,11 @@ psa_status_t psa_asymmetric_verify( psa_key_slot_t key,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
-                                    const uint8_t *salt,
-                                    size_t salt_length,
                                     const uint8_t *signature,
                                     size_t signature_length )
 {
     ATCAError atca_err = ATCA_SUCCESS;
     ATCAKey *atca_key = NULL;
-
-    (void) salt;
-    (void) salt_length;
 
     if( ! PSA_ALG_IS_ECDSA( alg ) )
         return( PSA_ERROR_INVALID_ARGUMENT );
@@ -116,9 +106,6 @@ static psa_status_t atca_asymmetric_opaque_sign( uint32_t key_id,
 {
     ATCAError atca_err = ATCA_SUCCESS;
     ATCAKey *atca_key = NULL;
-
-    (void) salt;
-    (void) salt_length;
 
     if( ! PSA_ALG_IS_ECDSA( alg ) )
         return( PSA_ERROR_INVALID_ARGUMENT );
@@ -152,9 +139,6 @@ static psa_status_t atca_asymmetric_opaque_verify( uint32_t key_id,
      * (slot manager would call the driver and say "please give me a slot for
      * doing blah blah", we'd reply "ok, here ya go" or "sorry, I don't have
      * slots that can do that").
-
-    (void) salt;
-    (void) salt_length;
 
     if( ! PSA_ALG_IS_ECDSA( alg ) )
         return( PSA_ERROR_NOT_SUPPORTED );
@@ -200,16 +184,10 @@ psa_status_t psa_asymmetric_sign( psa_key_slot_t key,
                                   psa_algorithm_t alg,
                                   const uint8_t *hash,
                                   size_t hash_length,
-                                  const uint8_t *salt,
-                                  size_t salt_length,
                                   uint8_t *signature,
                                   size_t signature_size,
                                   size_t *signature_length )
 {
-    /* XXX No salt? */
-    (void) salt;
-    (void) salt_length;
-
     return atca_opaque_asymmetric.p_sign(key, alg, hash, hash_length, signature, signature_size, signature_length);
 }
 
@@ -217,15 +195,9 @@ psa_status_t psa_asymmetric_verify( psa_key_slot_t key,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
-                                    const uint8_t *salt,
-                                    size_t salt_length,
                                     const uint8_t *signature,
                                     size_t signature_length )
 {
-    /* XXX No salt? */
-    (void) salt;
-    (void) salt_length;
-
     return atca_opaque_asymmetric.p_verify(key, alg, hash, hash_length, signature, signature_length);
 }
 

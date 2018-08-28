@@ -96,7 +96,7 @@ psa_status_t psa_asymmetric_verify( psa_key_slot_t key,
 
 // Driver API implementation
 
-static psa_status_t atca_asymmetric_opaque_sign( uint32_t key_id,
+static psa_status_t atca_asymmetric_opaque_sign( psa_key_slot_t key,
                                           psa_algorithm_t alg,
                                           const uint8_t *p_hash,
                                           size_t hash_length,
@@ -121,8 +121,7 @@ static psa_status_t atca_asymmetric_opaque_sign( uint32_t key_id,
     return( atca_to_psa_error( atca_err ) );
 }
 
-/* XXX Why use uint32_t key_id instead of psa_key_slot_t? */
-static psa_status_t atca_asymmetric_opaque_verify( uint32_t key_id,
+static psa_status_t atca_asymmetric_opaque_verify( psa_key_slot_t key,
                                             psa_algorithm_t alg,
                                             const uint8_t *p_hash,
                                             size_t hash_length,
@@ -131,14 +130,6 @@ static psa_status_t atca_asymmetric_opaque_verify( uint32_t key_id,
 {
     ATCAError atca_err = ATCA_SUCCESS;
     ATCAKey *atca_key = NULL;
-
-    /* Should the translation from psa_key to device-specific key slot number
-     * happen at the driver layer or a higher layer? Probably driver, so that
-     * it can manage its own slots. Otherwise, we have to have the driver
-     * communicate back up the stack to the slot manager which slot to use
-     * (slot manager would call the driver and say "please give me a slot for
-     * doing blah blah", we'd reply "ok, here ya go" or "sorry, I don't have
-     * slots that can do that").
 
     if( ! PSA_ALG_IS_ECDSA( alg ) )
         return( PSA_ERROR_NOT_SUPPORTED );

@@ -146,15 +146,6 @@ static psa_status_t atca_asymmetric_opaque_verify( psa_key_slot_t key,
 
 extern "C" {
 
-/* A struct for all asymmetric function pointers... psa_crypto_driver.h should
- * have this. Why have opaque in a struct separate from transparent? */
-typedef struct {
-    pcd_asymmetric_opaque_sign_t p_sign;
-    pcd_asymmetric_opaque_verify_t p_verify;
-    pcd_asymmetric_opaque_encrypt_t p_encrypt;
-    pcd_asymmetric_opaque_decrypt_t p_decrypt;
-} pcd_opaque_asymmetric_t;
-
 /* Naming order is inconsistent between asymmetric_opaque and opaque_mac.
  * Should be opaque_asymmetric. */
 
@@ -163,7 +154,7 @@ typedef struct {
  * (for SPI). Expose the table as a global. Not sure how our functions are
  * discovered by Mbed Crypto yet. */
 
-pcd_opaque_asymmetric_t atca_opaque_asymmetric = {
+struct pcd_opaque_asymmetric_t atca_opaque_asymmetric = {
     .p_sign = atca_asymmetric_opaque_sign,
     .p_verify = atca_asymmetric_opaque_sign,
 };

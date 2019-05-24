@@ -31,21 +31,22 @@
         atcab_release();  \
     } while(0)
 
-#define ASSERT_STATUS(expression, expected, result)             \
+#define ASSERT_STATUS(expression, expected, psa_error)          \
     do                                                          \
     {                                                           \
-        status = (expression);                                  \
-        int ASSERT_STATUS_expected = (expected);                \
-        if ((status) != (ASSERT_STATUS_expected))               \
+        ATCA_STATUS ASSERT_result = (expression);               \
+        ATCA_STATUS ASSERT_expected = (expected);               \
+        if ((ASSERT_result) != (ASSERT_expected))               \
         {                                                       \
-            status = (result);                                  \
+            status = (psa_error);                               \
             goto exit;                                          \
         }                                                       \
+        status = PSA_SUCCESS;                                   \
     } while(0)
 
-#define ASSERT_SUCCESS(operation, result) ASSERT_STATUS(operation,    \
-                                                        ATCA_SUCCESS, \
-                                                        result)
+#define ASSERT_SUCCESS(expression) ASSERT_STATUS(expression,ATCA_SUCCESS, \
+                                      atecc608a_to_psa_error(ASSERT_result))
+
 ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,
@@ -120,7 +121,7 @@ psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
 
     ATCAB_INIT();
 
-    ASSERT_SUCCESS(atcab_read_serial_number(buffer), PSA_ERROR_HARDWARE_FAILURE);
+    ASSERT_SUCCESS(atcab_read_serial_number(buffer));
     *buffer_length = ATCA_SERIAL_NUM_SIZE;
 
     exit:
@@ -135,7 +136,7 @@ psa_status_t atecc608a_check_config_locked()
     
     ATCAB_INIT();
 
-    ASSERT_SUCCESS(atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked), PSA_ERROR_HARDWARE_FAILURE);
+    ASSERT_SUCCESS(atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked));
 
     exit:
     ATCAB_DEINIT();
@@ -152,7 +153,6 @@ psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 {
     const size_t key_data_len = 65;
     const uint16_t slot = key;
-    ATCA_STATUS ret = ATCA_GEN_FAIL;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     if (data_size < key_data_len)
@@ -164,7 +164,7 @@ psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 
     /* atcab_get_pubkey returns concatenated x and y values, and the desired 
        format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
-    ASSERT_SUCCESS((ret = atcab_get_pubkey(slot, &p_data[1])), atecc608a_to_psa_error(ret));
+    ASSERT_SUCCESS(atcab_get_pubkey(slot, &p_data[1]));
 
     p_data[0] = 4;
     *p_data_length = key_data_len;
@@ -187,7 +187,6 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
                                        size_t signature_size,
                                        size_t *p_signature_length)
 {
-    ATCA_STATUS ret = ATCA_GEN_FAIL;
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
@@ -212,8 +211,7 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
 
     /* Signature will be returned here. Format is R and S integers in
      * big-endian format. 64 bytes for P256 curve. */
-    ASSERT_SUCCESS((ret = atcab_sign(key_id, p_hash, p_signature)),
-                   atecc608a_to_psa_error(ret));
+    ASSERT_SUCCESS(atcab_sign(key_id, p_hash, p_signature));
          
     *p_signature_length = ATCA_SIG_SIZE;
 

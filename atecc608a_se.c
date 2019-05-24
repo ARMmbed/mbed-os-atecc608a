@@ -66,11 +66,11 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
         return PSA_SUCCESS;
     case ATCA_BAD_PARAM:
     case ATCA_INVALID_ID:
-    case ATCA_INVALID_SIZE:
-    case ATCA_SMALL_BUFFER:
-    case ATCA_BAD_OPCODE:
-    case ATCA_ASSERT_FAILURE:
         return PSA_ERROR_INVALID_ARGUMENT;
+    case ATCA_ASSERT_FAILURE:
+        return PSA_ERROR_TAMPERING_DETECTED;
+    case ATCA_SMALL_BUFFER:
+        return PSA_ERROR_BUFFER_TOO_SMALL;
     case ATCA_RX_CRC_ERROR:
     case ATCA_RX_FAIL:
     case ATCA_STATUS_CRC:
@@ -88,6 +88,7 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
         return PSA_ERROR_NOT_SUPPORTED;
     case ATCA_ALLOC_FAILURE:
         return PSA_ERROR_INSUFFICIENT_MEMORY;
+    case ATCA_BAD_OPCODE:
     case ATCA_CONFIG_ZONE_LOCKED:
     case ATCA_DATA_ZONE_LOCKED:
     case ATCA_NOT_LOCKED:
@@ -101,6 +102,7 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     case ATCA_GEN_FAIL:
     case ATCA_EXECUTION_ERROR:
     case ATCA_HEALTH_TEST_ERROR:
+    case ATCA_INVALID_SIZE:
     default:
         return PSA_ERROR_HARDWARE_FAILURE;
     }

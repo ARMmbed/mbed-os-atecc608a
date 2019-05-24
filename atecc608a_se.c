@@ -158,6 +158,8 @@ psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 
     ATCAB_INIT();
 
+    /* atcab_get_pubkey returns concatenated x and y values, and the desired 
+       format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
     ASSERT_SUCCESS((ret = atcab_get_pubkey(slot, &p_data[1])), atecc608a_to_psa_error(ret));
 
     p_data[0] = 4;
@@ -186,7 +188,6 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     /* We can only do ECDSA on SHA-256 */
-    /* PSA_ALG_ECDSA(PSA_ALG_SHA_256) */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
     {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -202,7 +203,6 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
 
     /* Signature will be returned here. Format is R and S integers in
      * big-endian format. 64 bytes for P256 curve. */
-
     ASSERT_SUCCESS((ret = atcab_sign(key_id, p_hash, p_signature)),
                    atecc608a_to_psa_error(ret));
          

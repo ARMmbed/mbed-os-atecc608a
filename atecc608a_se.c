@@ -15,6 +15,37 @@
 #endif
 #include <stdbool.h>
 
+#define ATCAB_INIT()                                        \
+    do                                                      \
+    {                                                       \
+        if (atcab_init(&atca_iface_config) != ATCA_SUCCESS) \
+        {                                                   \
+            status = PSA_ERROR_HARDWARE_FAILURE;            \
+            goto exit;                                      \
+        }                                                   \
+    } while(0)
+
+#define ATCAB_DEINIT()    \
+    do                    \
+    {                     \
+        atcab_release();  \
+    } while(0)
+
+#define ASSERT_STATUS(expression, expected, result)             \
+    do                                                          \
+    {                                                           \
+        status = (expression);                                  \
+        int ASSERT_STATUS_expected = (expected);                \
+        if ((status) != (ASSERT_STATUS_expected))               \
+        {                                                       \
+            status = (result);                                  \
+            goto exit;                                          \
+        }                                                       \
+    } while(0)
+
+#define ASSERT_SUCCESS(operation, result) ASSERT_STATUS(operation,    \
+                                                        ATCA_SUCCESS, \
+                                                        result)
 ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,
@@ -77,52 +108,38 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
 
 psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size)
 {
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     if (buffer_size < ATCA_SERIAL_NUM_SIZE)
     {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
-    if (atcab_init(&atca_iface_config) != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
+    ATCAB_INIT();
 
-    if (atcab_read_serial_number(buffer) != ATCA_SUCCESS)
-    {
-        atcab_release();
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
+    ASSERT_SUCCESS(atcab_read_serial_number(buffer), PSA_ERROR_HARDWARE_FAILURE);
 
-    if (atcab_release() != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
-
-    return PSA_SUCCESS;
+    exit:
+    ATCAB_DEINIT();
+    return status;
 }
 
 psa_status_t atecc608a_check_config_locked()
 {
     bool config_locked;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+    
+    ATCAB_INIT();
 
-    if (atcab_init(&atca_iface_config) != ATCA_SUCCESS)
+    ASSERT_SUCCESS(atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked), PSA_ERROR_HARDWARE_FAILURE);
+
+    exit:
+    ATCAB_DEINIT();
+    if(status == PSA_SUCCESS)
     {
-        return PSA_ERROR_HARDWARE_FAILURE;
+        status = config_locked? PSA_SUCCESS : PSA_ERROR_HARDWARE_FAILURE;
     }
-
-    if (atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked) != ATCA_SUCCESS)
-    {
-        atcab_release();
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
-
-    if (atcab_release() != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
-
-    return config_locked? PSA_SUCCESS : PSA_ERROR_HARDWARE_FAILURE;
+    return status;        
 }
 
 psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
@@ -131,37 +148,29 @@ psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 {
     const size_t key_data_len = 65;
     const uint16_t slot = key;
-    ATCA_STATUS ret = ATCA_SUCCESS;
+    ATCA_STATUS ret = ATCA_GEN_FAIL;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     if (data_size < key_data_len)
     {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
-    if (atcab_init(&atca_iface_config) != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
+    ATCAB_INIT();
 
-    if ((ret = atcab_get_pubkey(slot, &p_data[1])) != ATCA_SUCCESS)
-    {
-        atcab_release();
-        return atecc608a_to_psa_error(ret);
-    }
+    ASSERT_SUCCESS((ret = atcab_get_pubkey(slot, &p_data[1])), atecc608a_to_psa_error(ret));
+
     p_data[0] = 4;
     *p_data_length = key_data_len;
-
-    if (atcab_release() != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
 
 #ifdef DEBUG_PRINT
     printf("atecc608a_export_key - pubkey size %d:\n", *p_data_length);
     atcab_printbin_sp(p_data, *p_data_length);
 #endif
 
-    return PSA_SUCCESS;
+    exit:
+    ATCAB_DEINIT();
+    return status;
 }
 
 psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
@@ -172,8 +181,9 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
                                        size_t signature_size,
                                        size_t *p_signature_length)
 {
-    ATCA_STATUS ret = ATCA_SUCCESS;
+    ATCA_STATUS ret = ATCA_GEN_FAIL;
     const uint16_t key_id = key_slot;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     /* We can only do ECDSA on SHA-256 */
     /* PSA_ALG_ECDSA(PSA_ALG_SHA_256) */
@@ -188,30 +198,22 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if (atcab_init(&atca_iface_config) != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
+    ATCAB_INIT();
 
     /* Signature will be returned here. Format is R and S integers in
      * big-endian format. 64 bytes for P256 curve. */
 
-    if ((ret = atcab_sign(key_id, p_hash, p_signature)) != ATCA_SUCCESS)
-    {
-        atcab_release();
-        return atecc608a_to_psa_error(ret);
-    }
-
+    ASSERT_SUCCESS((ret = atcab_sign(key_id, p_hash, p_signature)),
+                   atecc608a_to_psa_error(ret));
+         
     *p_signature_length = 64;
-    if (atcab_release() != ATCA_SUCCESS)
-    {
-        return PSA_ERROR_HARDWARE_FAILURE;
-    }
 
 #ifdef DEBUG_PRINT
     printf("atecc608a_asymmetric_sign - signature size %d:\n", *p_signature_length);
     atcab_printbin_sp(p_signature, *p_signature_length);
 #endif
 
-    return PSA_SUCCESS;
+    exit:
+    ATCAB_DEINIT();
+    return status;
 }

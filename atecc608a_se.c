@@ -106,7 +106,8 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     }
 }
 
-psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size)
+psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
+                                         size_t *buffer_length)
 {
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
@@ -118,6 +119,7 @@ psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size)
     ATCAB_INIT();
 
     ASSERT_SUCCESS(atcab_read_serial_number(buffer), PSA_ERROR_HARDWARE_FAILURE);
+    *buffer_length = ATCA_SERIAL_NUM_SIZE;
 
     exit:
     ATCAB_DEINIT();

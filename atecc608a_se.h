@@ -26,7 +26,8 @@
 #include <stdint.h>
 #include "psa/crypto.h"
 
-psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size);
+psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
+                                         size_t *buffer_length);
 psa_status_t atecc608a_check_config_locked();
 psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key, uint8_t *p_data,
                                          size_t data_size, size_t *p_data_length);

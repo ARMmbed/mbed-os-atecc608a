@@ -23,6 +23,7 @@
 #ifndef ATECC608A_SE_H
 #define ATECC608A_SE_H
 
+#include <stdint.h>
 #include "psa/crypto.h"
 
 psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size);

@@ -10,6 +10,11 @@
 /* Uncomment to print results on success */
 //#define DEBUG_PRINT
 
+#ifdef DEBUG_PRINT
+#include <stdio.h>
+#endif
+#include <stdbool.h>
+
 ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,

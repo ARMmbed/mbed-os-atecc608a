@@ -124,7 +124,7 @@ psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
     ASSERT_SUCCESS(atcab_read_serial_number(buffer));
     *buffer_length = ATCA_SERIAL_NUM_SIZE;
 
-    exit:
+exit:
     ATCAB_DEINIT();
     return status;
 }
@@ -138,7 +138,7 @@ psa_status_t atecc608a_check_config_locked()
 
     ASSERT_SUCCESS(atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked));
 
-    exit:
+exit:
     ATCAB_DEINIT();
     if(status == PSA_SUCCESS)
     {
@@ -174,7 +174,7 @@ psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
     atcab_printbin_sp(p_data, *p_data_length);
 #endif
 
-    exit:
+exit:
     ATCAB_DEINIT();
     return status;
 }
@@ -220,7 +220,7 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
     atcab_printbin_sp(p_signature, *p_signature_length);
 #endif
 
-    exit:
+exit:
     ATCAB_DEINIT();
     return status;
 }

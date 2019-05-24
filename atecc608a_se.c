@@ -201,6 +201,11 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
+    if(signature_size < ATCA_SIG_SIZE)
+    {
+        return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+
     ATCAB_INIT();
 
     /* Signature will be returned here. Format is R and S integers in
@@ -208,7 +213,7 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
     ASSERT_SUCCESS((ret = atcab_sign(key_id, p_hash, p_signature)),
                    atecc608a_to_psa_error(ret));
          
-    *p_signature_length = 64;
+    *p_signature_length = ATCA_SIG_SIZE;
 
 #ifdef DEBUG_PRINT
     printf("atecc608a_asymmetric_sign - signature size %d:\n", *p_signature_length);

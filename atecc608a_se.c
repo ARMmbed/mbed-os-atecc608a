@@ -1,19 +1,40 @@
+/**
+ * \file atecc608a_se.c
+ * \brief Secure element driver implementation for ATECC508A and ATECC509A.
+ */
+
+/*
+ *  Copyright (C) 2019, ARM Limited, All Rights Reserved
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may
+ *  not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 #include "atecc608a_se.h"
 
-#include "atca_status.h"
-#include "atca_devtypes.h"
-#include "atca_iface.h"
-#include "atca_command.h"
+#include "psa/crypto.h"
+
 #include "atca_basic.h"
 #include "atca_helpers.h"
-
-/* Uncomment to print results on success */
-//#define DEBUG_PRINT
 
 #ifdef DEBUG_PRINT
 #include <stdio.h>
 #endif
+
 #include <stdbool.h>
+#include <stdint.h>
+
+/* Uncomment to print results on success */
+//#define DEBUG_PRINT
 
 #define ATCAB_INIT()                                        \
     do                                                      \
@@ -25,12 +46,20 @@
         }                                                   \
     } while(0)
 
+/** `atcab_release()` might return `ATCA_BAD_PARAM` if there is no global device
+ *  initialized via `atcab_init()`. HAL might return an error if an i2c device
+ *  cannot be released, but in current implementations it always returns
+ *  `ATCA_SUCCESS` - therefore we are ignoring the return code. */
 #define ATCAB_DEINIT()    \
     do                    \
     {                     \
         atcab_release();  \
     } while(0)
 
+/** This macro checks if the result of an `expression` is equal to an
+ *  `expected` value and sets a `status` variable of type `psa_status_t` to
+ *  `PSA_SUCCESS`. If they are not equal, the `status` is set to
+ *  `psa_error instead`, and the code jumps to the `exit` label. */
 #define ASSERT_STATUS(expression, expected, psa_error)          \
     do                                                          \
     {                                                           \
@@ -44,10 +73,11 @@
         status = PSA_SUCCESS;                                   \
     } while(0)
 
-#define ASSERT_SUCCESS(expression) ASSERT_STATUS(expression,ATCA_SUCCESS, \
+/** Check if an ATCA operation is successful, translate the error otherwise. */
+#define ASSERT_SUCCESS(expression) ASSERT_STATUS(expression, ATCA_SUCCESS, \
                                       atecc608a_to_psa_error(ASSERT_result))
 
-ATCAIfaceCfg atca_iface_config = {
+static ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,
     .atcai2c.slave_address = 0xC0,
@@ -109,47 +139,9 @@ static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     }
 }
 
-psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
-                                         size_t *buffer_length)
-{
-    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
-
-    if (buffer_size < ATCA_SERIAL_NUM_SIZE)
-    {
-        return PSA_ERROR_BUFFER_TOO_SMALL;
-    }
-
-    ATCAB_INIT();
-
-    ASSERT_SUCCESS(atcab_read_serial_number(buffer));
-    *buffer_length = ATCA_SERIAL_NUM_SIZE;
-
-exit:
-    ATCAB_DEINIT();
-    return status;
-}
-
-psa_status_t atecc608a_check_config_locked()
-{
-    bool config_locked;
-    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
-    
-    ATCAB_INIT();
-
-    ASSERT_SUCCESS(atcab_is_locked(LOCK_ZONE_CONFIG, &config_locked));
-
-exit:
-    ATCAB_DEINIT();
-    if(status == PSA_SUCCESS)
-    {
-        status = config_locked? PSA_SUCCESS : PSA_ERROR_HARDWARE_FAILURE;
-    }
-    return status;        
-}
-
-psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
-                                         uint8_t *p_data, size_t data_size,
-                                         size_t *p_data_length)
+static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
+                                                uint8_t *p_data, size_t data_size,
+                                                size_t *p_data_length)
 {
     const size_t key_data_len = 65;
     const uint16_t slot = key;
@@ -179,13 +171,13 @@ exit:
     return status;
 }
 
-psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
-                                       psa_algorithm_t alg,
-                                       const uint8_t *p_hash,
-                                       size_t hash_length,
-                                       uint8_t *p_signature,
-                                       size_t signature_size,
-                                       size_t *p_signature_length)
+static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
+                                              psa_algorithm_t alg,
+                                              const uint8_t *p_hash,
+                                              size_t hash_length,
+                                              uint8_t *p_signature,
+                                              size_t signature_size,
+                                              size_t *p_signature_length)
 {
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
@@ -202,7 +194,7 @@ psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if(signature_size < ATCA_SIG_SIZE)
+    if (signature_size < ATCA_SIG_SIZE)
     {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
@@ -224,3 +216,36 @@ exit:
     ATCAB_DEINIT();
     return status;
 }
+
+
+#define PSA_ATECC608A_LIFETIME 0xdeadbeefU
+
+static psa_drv_se_asymmetric_t atecc608a_asymmetric =
+{
+    .p_sign = &atecc608a_asymmetric_sign,
+    .p_verify = 0,
+    .p_encrypt = 0,
+    .p_decrypt = 0,
+};
+
+static psa_drv_se_key_management_t atecc608a_key_management =
+{
+    .p_import = 0,
+    .p_generate = 0,
+    .p_destroy = 0,
+    /* So far there is no public key export function in the API, so use this instead */
+    .p_export = &atecc608a_export_public_key,
+};
+
+psa_drv_se_info_t atecc608a_drv_info =
+{ 
+    .lifetime = PSA_ATECC608A_LIFETIME,
+    .p_key_management = &atecc608a_key_management,
+    .p_mac = 0,
+    .p_cipher = 0,
+    .p_asym = &atecc608a_asymmetric,
+    .p_aead = 0,
+    .p_derive = 0,
+    .slot_min = 0,
+    .slot_max = 0,
+};

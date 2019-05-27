@@ -1,6 +1,6 @@
 /**
  * \file atecc608a_se.h
- * \brief Secure element implementation for ATECC508A and ATECC509A
+ * \brief Secure element driver structure for ATECC508A and ATECC509A.
  */
 
 /*
@@ -23,20 +23,8 @@
 #ifndef ATECC608A_SE_H
 #define ATECC608A_SE_H
 
-#include <stdint.h>
-#include "psa/crypto.h"
+#include "psa/crypto_se_driver.h"
 
-psa_status_t atecc608a_get_serial_number(uint8_t* buffer, size_t buffer_size,
-                                         size_t *buffer_length);
-psa_status_t atecc608a_check_config_locked();
-psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key, uint8_t *p_data,
-                                         size_t data_size, size_t *p_data_length);
-psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
-                                       psa_algorithm_t alg,
-                                       const uint8_t *p_hash,
-                                       size_t hash_length,
-                                       uint8_t *p_signature,
-                                       size_t signature_size,
-                                       size_t *p_signature_length);
+extern psa_drv_se_info_t atecc608a_drv_info;
 
 #endif /* ATECC608A_SE_H */

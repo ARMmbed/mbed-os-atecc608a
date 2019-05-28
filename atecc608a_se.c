@@ -20,10 +20,6 @@
  *  limitations under the License.
  */
 #include "atecc608a_se.h"
-
-#include "psa/crypto.h"
-
-#include "atca_basic.h"
 #include "atca_helpers.h"
 
 #ifdef DEBUG_PRINT
@@ -35,26 +31,6 @@
 
 /* Uncomment to print results on success */
 //#define DEBUG_PRINT
-
-#define ATCAB_INIT()                                        \
-    do                                                      \
-    {                                                       \
-        if (atcab_init(&atca_iface_config) != ATCA_SUCCESS) \
-        {                                                   \
-            status = PSA_ERROR_HARDWARE_FAILURE;            \
-            goto exit;                                      \
-        }                                                   \
-    } while(0)
-
-/** `atcab_release()` might return `ATCA_BAD_PARAM` if there is no global device
- *  initialized via `atcab_init()`. HAL might return an error if an i2c device
- *  cannot be released, but in current implementations it always returns
- *  `ATCA_SUCCESS` - therefore we are ignoring the return code. */
-#define ATCAB_DEINIT()    \
-    do                    \
-    {                     \
-        atcab_release();  \
-    } while(0)
 
 /** This macro checks if the result of an `expression` is equal to an
  *  `expected` value and sets a `status` variable of type `psa_status_t` to
@@ -77,7 +53,7 @@
 #define ASSERT_SUCCESS(expression) ASSERT_STATUS(expression, ATCA_SUCCESS, \
                                       atecc608a_to_psa_error(ASSERT_result))
 
-static ATCAIfaceCfg atca_iface_config = {
+ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,
     .atcai2c.slave_address = 0xC0,
@@ -87,7 +63,7 @@ static ATCAIfaceCfg atca_iface_config = {
     .rx_retries = 20,
 };
 
-static psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
+psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
 {
     switch (ret)
     {

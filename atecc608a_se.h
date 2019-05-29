@@ -27,29 +27,11 @@
 #include "atca_basic.h"
 
 extern psa_drv_se_info_t atecc608a_drv_info;
-extern ATCAIfaceCfg atca_iface_config;
 
 psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret);
 
-#define ATCAB_INIT()                                        \
-    do                                                      \
-    {                                                       \
-        if (atcab_init(&atca_iface_config) != ATCA_SUCCESS) \
-        {                                                   \
-            status = PSA_ERROR_HARDWARE_FAILURE;            \
-            goto exit;                                      \
-        }                                                   \
-    } while(0)
+psa_status_t atecc608a_init();
 
-/** `atcab_release()` might return `ATCA_BAD_PARAM` if there is no global device
- *  initialized via `atcab_init()`. HAL might return an error if an i2c device
- *  cannot be released, but in current implementations it always returns
- *  `ATCA_SUCCESS` - therefore we are ignoring the return code. */
-#define ATCAB_DEINIT()    \
-    do                    \
-    {                     \
-        atcab_release();  \
-    } while(0)
+psa_status_t atecc608a_deinit();
 
-        
 #endif /* ATECC608A_SE_H */

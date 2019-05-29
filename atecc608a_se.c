@@ -53,7 +53,12 @@
 #define ASSERT_SUCCESS(expression) ASSERT_STATUS(expression, ATCA_SUCCESS, \
                                       atecc608a_to_psa_error(ASSERT_result))
 
-ATCAIfaceCfg atca_iface_config = {
+/** Does the same as the macro above, but without the error translation and for
+ *  the PSA return code - PSA_SUCCESS.*/
+#define ASSERT_SUCCESS_PSA(expression) ASSERT_STATUS(expression, PSA_SUCCESS, \
+                                                     ASSERT_result)
+
+static ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
     .devtype = ATECC608A,
     .atcai2c.slave_address = 0xC0,
@@ -115,6 +120,16 @@ psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     }
 }
 
+psa_status_t atecc608a_init()
+{
+    return atecc608a_to_psa_error(atcab_init(&atca_iface_config));
+}
+
+psa_status_t atecc608a_deinit()
+{
+    return atecc608a_to_psa_error(atcab_release());
+}
+
 static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
                                                 uint8_t *p_data, size_t data_size,
                                                 size_t *p_data_length)
@@ -128,9 +143,9 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
-    ATCAB_INIT();
+    ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    /* atcab_get_pubkey returns concatenated x and y values, and the desired 
+    /* atcab_get_pubkey returns concatenated x and y values, and the desired
        format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
     ASSERT_SUCCESS(atcab_get_pubkey(slot, &p_data[1]));
 
@@ -143,7 +158,7 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 #endif
 
 exit:
-    ATCAB_DEINIT();
+    atecc608a_deinit();
     return status;
 }
 
@@ -175,12 +190,12 @@ static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
-    ATCAB_INIT();
+    ASSERT_SUCCESS_PSA(atecc608a_init());
 
     /* Signature will be returned here. Format is R and S integers in
      * big-endian format. 64 bytes for P256 curve. */
     ASSERT_SUCCESS(atcab_sign(key_id, p_hash, p_signature));
-         
+
     *p_signature_length = ATCA_SIG_SIZE;
 
 #ifdef DEBUG_PRINT
@@ -189,7 +204,7 @@ static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
 #endif
 
 exit:
-    ATCAB_DEINIT();
+    atecc608a_deinit();
     return status;
 }
 
@@ -214,7 +229,7 @@ static psa_drv_se_key_management_t atecc608a_key_management =
 };
 
 psa_drv_se_info_t atecc608a_drv_info =
-{ 
+{
     .lifetime = PSA_ATECC608A_LIFETIME,
     .p_key_management = &atecc608a_key_management,
     .p_mac = 0,

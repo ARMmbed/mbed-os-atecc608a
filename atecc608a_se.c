@@ -161,6 +161,43 @@ exit:
     atecc608a_deinit();
     return status;
 }
+static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
+                                                psa_key_lifetime_t lifetime,
+                                                psa_key_type_t type,
+                                                psa_algorithm_t alg,
+                                                psa_key_usage_t usage,
+                                                const uint8_t *p_data,
+                                                size_t data_length)
+{
+    const uint16_t key_id = key_slot;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    /* Keys 8 to 15 can store public keys. Slots 1-7 are too small. */
+    if (key_id < 7 || key_id > 15 || data_length != ATCA_PUB_KEY_SIZE)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (!PSA_KEY_TYPE_IS_PUBLIC_KEY(type))
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    /* We can only do ECDSA on SHA-256 */
+    if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+
+    /* Signature format is R and S integers in big-endian format.
+     * 64 bytes for P256 curve. */
+    ASSERT_SUCCESS(atcab_write_pubkey(key_id, p_data));
+exit:
+    atecc608a_deinit();
+    return status;
+}
 
 static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
                                               psa_algorithm_t alg,
@@ -208,20 +245,64 @@ exit:
     return status;
 }
 
+psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
+                                         psa_algorithm_t alg,
+                                         const uint8_t *p_hash,
+                                         size_t hash_length,
+                                         const uint8_t *p_signature,
+                                         size_t signature_length)
+{
+    const uint16_t key_id = key_slot;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+    bool is_verified = false;
+
+    /* Keys 8 to 15 can store public keys. */
+    if (key_id < 7 || key_id > 15)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    /* We can only do ECDSA on SHA-256 */
+    if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (hash_length != 32)
+    {
+        /* The driver only supports hashes of length 32. */
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (signature_length != ATCA_SIG_SIZE)
+    {
+        /* The driver only supports signatures of length 64. */
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+
+    ASSERT_SUCCESS(atcab_verify_stored(p_hash, p_signature, key_id, &is_verified));
+
+exit:
+    atecc608a_deinit();
+    return status;
+}
 
 #define PSA_ATECC608A_LIFETIME 0xdeadbeefU
 
 static psa_drv_se_asymmetric_t atecc608a_asymmetric =
 {
     .p_sign = &atecc608a_asymmetric_sign,
-    .p_verify = 0,
+    .p_verify = &atecc608a_asymmetric_verify,
     .p_encrypt = 0,
     .p_decrypt = 0,
 };
 
 static psa_drv_se_key_management_t atecc608a_key_management =
 {
-    .p_import = 0,
+    /* So far there is no public key import function in the API, so use this instead */
+    .p_import = &atecc608a_import_public_key,
     .p_generate = 0,
     .p_destroy = 0,
     /* So far there is no public key export function in the API, so use this instead */

@@ -22,6 +22,8 @@
 #include "atecc608a_se.h"
 #include "atca_helpers.h"
 
+#include "psa/crypto.h"
+
 #ifdef DEBUG_PRINT
 #include <stdio.h>
 #endif
@@ -216,7 +218,7 @@ static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if (hash_length != 32)
+    if (hash_length != PSA_HASH_SIZE(PSA_ALG_SHA_256))
     {
         /* The driver only supports signing things of length 32. */
         return PSA_ERROR_NOT_SUPPORTED;
@@ -268,7 +270,7 @@ psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if (hash_length != 32)
+    if (hash_length != PSA_HASH_SIZE(PSA_ALG_SHA_256))
     {
         /* The driver only supports hashes of length 32. */
         return PSA_ERROR_NOT_SUPPORTED;

@@ -293,8 +293,8 @@ exit:
 
 static psa_drv_se_asymmetric_t atecc608a_asymmetric =
 {
-    .p_sign = &atecc608a_asymmetric_sign,
-    .p_verify = &atecc608a_asymmetric_verify,
+    .p_sign = atecc608a_asymmetric_sign,
+    .p_verify = atecc608a_asymmetric_verify,
     .p_encrypt = 0,
     .p_decrypt = 0,
 };
@@ -302,11 +302,11 @@ static psa_drv_se_asymmetric_t atecc608a_asymmetric =
 static psa_drv_se_key_management_t atecc608a_key_management =
 {
     /* So far there is no public key import function in the API, so use this instead */
-    .p_import = &atecc608a_import_public_key,
+    .p_import = atecc608a_import_public_key,
     .p_generate = 0,
     .p_destroy = 0,
     /* So far there is no public key export function in the API, so use this instead */
-    .p_export = &atecc608a_export_public_key,
+    .p_export = atecc608a_export_public_key,
 };
 
 psa_drv_se_info_t atecc608a_drv_info =

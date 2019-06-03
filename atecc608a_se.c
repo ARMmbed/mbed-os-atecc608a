@@ -176,17 +176,23 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
 
     /* Keys 8 to 15 can store public keys. Slots 1-7 are too small.
      * We also check if the key has a size of 65 {0x04, X, Y}. */
-    if (key_id < 7 || key_id > 15 || data_length != PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(256))
+    if (key_id < 7 || key_id > 15)
     {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    if (!PSA_KEY_TYPE_IS_PUBLIC_KEY(type))
+    if(data_length != PSA_KEY_EXPORT_MAX_SIZE(PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_CURVE_SECP256R1),
+                                               256))
     {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    /* We can only do ECDSA on SHA-256 */
+    if (type != PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_CURVE_SECP256R1))
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    /* We can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
     {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -279,7 +285,7 @@ psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
     if (signature_length != ATCA_SIG_SIZE)
     {
         /* The driver only supports signatures of length 64. */
-        return PSA_ERROR_NOT_SUPPORTED;
+        return PSA_ERROR_INVALID_SIGNATURE;
     }
 
     ASSERT_SUCCESS_PSA(atecc608a_init());

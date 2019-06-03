@@ -148,7 +148,7 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
     /* atcab_get_pubkey returns concatenated x and y values, and the desired
-       format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
+     * format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
     ASSERT_SUCCESS(atcab_get_pubkey(slot, &p_data[1]));
 
     p_data[0] = 4;
@@ -175,8 +175,8 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
     /* Keys 8 to 15 can store public keys. Slots 1-7 are too small.
-       We also check if the key has a size of 65 {0x04, X, Y}. */
-    if (key_id < 7 || key_id > 15 || data_length != ATCA_PUB_KEY_SIZE + 1)
+     * We also check if the key has a size of 65 {0x04, X, Y}. */
+    if (key_id < 7 || key_id > 15 || data_length != PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(256))
     {
         return PSA_ERROR_INVALID_ARGUMENT;
     }

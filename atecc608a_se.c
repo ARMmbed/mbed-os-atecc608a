@@ -122,6 +122,12 @@ psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     }
 }
 
+static psa_status_t is_public_key_slot(uint16_t key_slot)
+{
+    /* Keys 8 to 15 can store public keys. Slots 1-7 are too small. */
+    return ((key_slot >= 8 && key_slot <=15) ? PSA_SUCCESS : PSA_ERROR_INVALID_ARGUMENT);
+}
+
 psa_status_t atecc608a_init()
 {
     return atecc608a_to_psa_error(atcab_init(&atca_iface_config));
@@ -174,13 +180,9 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
-    /* Keys 8 to 15 can store public keys. Slots 1-7 are too small.
-     * We also check if the key has a size of 65 {0x04, X, Y}. */
-    if (key_id < 7 || key_id > 15)
-    {
-        return PSA_ERROR_INVALID_ARGUMENT;
-    }
+    ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
+    /* Check if the key has a size of 65 {0x04, X, Y}. */
     if(data_length != PSA_KEY_EXPORT_MAX_SIZE(PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_CURVE_SECP256R1),
                                                256))
     {
@@ -264,11 +266,7 @@ psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
     bool is_verified = false;
 
-    /* Keys 8 to 15 can store public keys. */
-    if (key_id < 7 || key_id > 15)
-    {
-        return PSA_ERROR_INVALID_ARGUMENT;
-    }
+    ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
     /* We can only do ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)

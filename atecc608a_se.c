@@ -154,7 +154,7 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
     /* atcab_get_pubkey returns concatenated x and y values, and the desired
-     * format is 0x04 + x + y. We start at &p_data[1] and add a 0x04 at p_data[0]. */
+     * format is 0x04 + x + y. Start at &p_data[1] and add a 0x04 at p_data[0]. */
     ASSERT_SUCCESS(atcab_get_pubkey(slot, &p_data[1]));
 
     p_data[0] = 4;
@@ -183,7 +183,8 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
     ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
     /* Check if the key has a size of 65 {0x04, X, Y}. */
-    if(data_length != PSA_KEY_EXPORT_MAX_SIZE(PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_CURVE_SECP256R1),
+    if (data_length != PSA_KEY_EXPORT_MAX_SIZE(PSA_KEY_TYPE_ECC_PUBLIC_KEY(
+                                                   PSA_ECC_CURVE_SECP256R1),
                                                256))
     {
         return PSA_ERROR_INVALID_ARGUMENT;
@@ -194,7 +195,7 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    /* We can only do randomized ECDSA on SHA-256 */
+    /* The driver can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
     {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -202,8 +203,9 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    /* PSA public key format is {0x04, X, Y}, and we want just raw {X,Y}. */
-    ASSERT_SUCCESS(atcab_write_pubkey(key_id, p_data+1));
+    /* PSA public key format is {0x04, X, Y}, and the cryptoauthlib accepts
+     * raw {X,Y}. */
+    ASSERT_SUCCESS(atcab_write_pubkey(key_id, p_data + 1));
 exit:
     atecc608a_deinit();
     return status;
@@ -220,7 +222,7 @@ static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
-    /* We can only do ECDSA on SHA-256 */
+    /* The driver can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
     {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -268,7 +270,7 @@ psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
 
     ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
-    /* We can only do ECDSA on SHA-256 */
+    /* The driver can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY)
     {
         return PSA_ERROR_NOT_SUPPORTED;

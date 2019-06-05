@@ -211,6 +211,53 @@ exit:
     return status;
 }
 
+static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
+                                           psa_key_type_t type,
+                                           psa_key_usage_t usage,
+                                           size_t bits,
+                                           const void *extra,
+                                           size_t extra_size,
+                                           uint8_t *p_pubkey_out,
+                                           size_t pubkey_out_size,
+                                           size_t *p_pubkey_length)
+{
+    const uint16_t key_id = key_slot;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    /* The hardware has slots 0-15 */
+    if (key_slot > 15)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (type != PSA_KEY_TYPE_ECC_KEYPAIR(PSA_ECC_CURVE_SECP256R1))
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (bits != PSA_BYTES_TO_BITS(ATCA_PRIV_KEY_SIZE))
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (p_pubkey_out != NULL && pubkey_out_size < ATCA_PUB_KEY_SIZE)
+    {
+       return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+    ASSERT_SUCCESS(atcab_genkey(key_id, p_pubkey_out));
+
+    if (p_pubkey_length != NULL)
+    {
+        *p_pubkey_length = ATCA_PUB_KEY_SIZE;
+    }
+
+exit:
+    atecc608a_deinit();
+    return status;
+}
+
 static psa_status_t atecc608a_asymmetric_sign(psa_key_slot_number_t key_slot,
                                               psa_algorithm_t alg,
                                               const uint8_t *p_hash,
@@ -311,7 +358,7 @@ static psa_drv_se_key_management_t atecc608a_key_management =
 {
     /* So far there is no public key import function in the API, so use this instead */
     .p_import = atecc608a_import_public_key,
-    .p_generate = 0,
+    .p_generate = atecc608a_generate_key,
     .p_destroy = 0,
     /* So far there is no public key export function in the API, so use this instead */
     .p_export = atecc608a_export_public_key,

@@ -142,7 +142,10 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
                                                 uint8_t *p_data, size_t data_size,
                                                 size_t *p_data_length)
 {
-    const size_t key_data_len = 65;
+    const size_t key_data_len = PSA_KEY_EXPORT_MAX_SIZE(
+                                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(
+                                        PSA_ECC_CURVE_SECP256R1),
+                                    256);
     const uint16_t slot = key;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
@@ -223,6 +226,10 @@ static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
 {
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+    const size_t key_data_len = PSA_KEY_EXPORT_MAX_SIZE(
+                                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(
+                                        PSA_ECC_CURVE_SECP256R1),
+                                    256);
 
     /* The hardware has slots 0-15 */
     if (key_slot > 15)
@@ -240,17 +247,29 @@ static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if (p_pubkey_out != NULL && pubkey_out_size < ATCA_PUB_KEY_SIZE)
+    if (p_pubkey_out != NULL && pubkey_out_size < key_data_len)
     {
        return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
-    ASSERT_SUCCESS(atcab_genkey(key_id, p_pubkey_out));
+
+    if (p_pubkey_out != NULL)
+    {
+        /* atcab_genkey returns concatenated x and y values, and the desired
+         * format is 0x04 + x + y. Start at &p_pubkey_out[1] and add a 0x04
+         * at p_pubkey_out[0]. */
+        ASSERT_SUCCESS(atcab_genkey(key_id, &p_pubkey_out[1]));
+        p_pubkey_out[0] = 4;
+    }
+    else
+    {
+        ASSERT_SUCCESS(atcab_genkey(key_id, NULL));
+    }
 
     if (p_pubkey_length != NULL)
     {
-        *p_pubkey_length = ATCA_PUB_KEY_SIZE;
+        *p_pubkey_length = key_data_len;
     }
 
 exit:

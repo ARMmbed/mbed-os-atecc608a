@@ -226,10 +226,6 @@ static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
 {
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
-    const size_t key_data_len = PSA_KEY_EXPORT_MAX_SIZE(
-                                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(
-                                        PSA_ECC_CURVE_SECP256R1),
-                                    256);
 
     /* The hardware has slots 0-15 */
     if (key_slot > 15)
@@ -247,7 +243,7 @@ static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    if (p_pubkey_out != NULL && pubkey_out_size < key_data_len)
+    if (p_pubkey_out != NULL && pubkey_out_size < 1 + ATCA_PUB_KEY_SIZE)
     {
        return PSA_ERROR_BUFFER_TOO_SMALL;
     }
@@ -269,7 +265,7 @@ static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
 
     if (p_pubkey_length != NULL)
     {
-        *p_pubkey_length = key_data_len;
+        *p_pubkey_length = 1 + ATCA_PUB_KEY_SIZE;
     }
 
 exit:

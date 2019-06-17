@@ -122,6 +122,21 @@ psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
     }
 }
 
+/* The driver works with pubkeys as concatenated x and y values, and the PSA
+ * format for pubkeys is 0x04 + x + y. Always use a pubkey buffer in PSA
+ * format, with enough space for the PSA format. To translate this buffer for
+ * use with cryptoauthlib, use pubkey_for_driver(). To ensure the buffer is in
+ * valid PSA format after cryptoauthlib operations, call pubkey_for_psa(). */
+static uint8_t *pubkey_for_driver(uint8_t *data)
+{
+    return &data[1];
+}
+
+static void pubkey_for_psa(uint8_t *data)
+{
+    data[0] = 0x4;
+}
+
 static psa_status_t is_public_key_slot(uint16_t key_slot)
 {
     /* Keys 8 to 15 can store public keys. Slots 1-7 are too small. */
@@ -142,7 +157,10 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
                                                 uint8_t *p_data, size_t data_size,
                                                 size_t *p_data_length)
 {
-    const size_t key_data_len = 65;
+    const size_t key_data_len = PSA_KEY_EXPORT_MAX_SIZE(
+                                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(
+                                        PSA_ECC_CURVE_SECP256R1),
+                                    256);
     const uint16_t slot = key;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
@@ -153,11 +171,9 @@ static psa_status_t atecc608a_export_public_key(psa_key_slot_number_t key,
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    /* atcab_get_pubkey returns concatenated x and y values, and the desired
-     * format is 0x04 + x + y. Start at &p_data[1] and add a 0x04 at p_data[0]. */
-    ASSERT_SUCCESS(atcab_get_pubkey(slot, &p_data[1]));
+    ASSERT_SUCCESS(atcab_get_pubkey(slot, pubkey_for_driver(p_data)));
+    pubkey_for_psa(p_data);
 
-    p_data[0] = 4;
     *p_data_length = key_data_len;
 
 #ifdef DEBUG_PRINT
@@ -203,9 +219,63 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    /* PSA public key format is {0x04, X, Y}, and the cryptoauthlib accepts
-     * raw {X,Y}. */
-    ASSERT_SUCCESS(atcab_write_pubkey(key_id, p_data + 1));
+    ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver(p_data)));
+exit:
+    atecc608a_deinit();
+    return status;
+}
+
+static psa_status_t atecc608a_generate_key(psa_key_slot_number_t key_slot,
+                                           psa_key_type_t type,
+                                           psa_key_usage_t usage,
+                                           size_t bits,
+                                           const void *extra,
+                                           size_t extra_size,
+                                           uint8_t *p_pubkey_out,
+                                           size_t pubkey_out_size,
+                                           size_t *p_pubkey_length)
+{
+    const uint16_t key_id = key_slot;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    /* The hardware has slots 0-15 */
+    if (key_slot > 15)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (type != PSA_KEY_TYPE_ECC_KEYPAIR(PSA_ECC_CURVE_SECP256R1))
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (bits != PSA_BYTES_TO_BITS(ATCA_PRIV_KEY_SIZE))
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    if (p_pubkey_out != NULL && pubkey_out_size < 1 + ATCA_PUB_KEY_SIZE)
+    {
+       return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+
+    if (p_pubkey_out != NULL)
+    {
+        ASSERT_SUCCESS(atcab_genkey(key_id, pubkey_for_driver(p_pubkey_out)));
+        pubkey_for_psa(p_pubkey_out);
+    }
+    else
+    {
+        ASSERT_SUCCESS(atcab_genkey(key_id, NULL));
+    }
+
+    if (p_pubkey_length != NULL)
+    {
+        *p_pubkey_length = 1 + ATCA_PUB_KEY_SIZE;
+    }
+
 exit:
     atecc608a_deinit();
     return status;
@@ -311,7 +381,7 @@ static psa_drv_se_key_management_t atecc608a_key_management =
 {
     /* So far there is no public key import function in the API, so use this instead */
     .p_import = atecc608a_import_public_key,
-    .p_generate = 0,
+    .p_generate = atecc608a_generate_key,
     .p_destroy = 0,
     /* So far there is no public key export function in the API, so use this instead */
     .p_export = atecc608a_export_public_key,

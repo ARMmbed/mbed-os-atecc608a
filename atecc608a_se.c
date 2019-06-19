@@ -219,7 +219,7 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver(p_data)));
+    ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver((uint8_t *) p_data)));
 exit:
     atecc608a_deinit();
     return status;

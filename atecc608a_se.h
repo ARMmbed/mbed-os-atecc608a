@@ -34,4 +34,14 @@ psa_status_t atecc608a_init();
 
 psa_status_t atecc608a_deinit();
 
+/** Read from a given slot at an offset. Data zone has to be locked for this
+ *  function to work. */
+psa_status_t atecc608a_read(uint16_t slot, size_t offset, uint8_t *data, size_t length);
+
+/** Write to a given slot at an offset. If the data zone is locked, offset and
+ *  length must be multiples of a word (4 bytes). If the data zone is unlocked,
+ *  only 32-byte writes are allowed, and the offset and length must be
+ *  multiples of 32. */
+psa_status_t atecc608a_write(uint16_t slot, size_t offset, const uint8_t *data, size_t length);
+
 #endif /* ATECC608A_SE_H */

@@ -219,7 +219,7 @@ static psa_status_t atecc608a_import_public_key(psa_key_slot_number_t key_slot,
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
-    ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver(p_data)));
+    ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver((uint8_t *) p_data)));
 exit:
     atecc608a_deinit();
     return status;
@@ -361,6 +361,42 @@ psa_status_t atecc608a_asymmetric_verify(psa_key_slot_number_t key_slot,
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
     ASSERT_SUCCESS(atcab_verify_stored(p_hash, p_signature, key_id, &is_verified));
+
+exit:
+    atecc608a_deinit();
+    return status;
+}
+
+psa_status_t atecc608a_write(uint16_t slot, size_t offset, const uint8_t *data, size_t length)
+{
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    /* The hardware has slots 0-15 */
+    if (slot > 15)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+    ASSERT_SUCCESS(atcab_write_bytes_zone(ATCA_ZONE_DATA, slot, offset, data, length));
+
+exit:
+    atecc608a_deinit();
+    return status;
+}
+
+psa_status_t atecc608a_read(uint16_t slot, size_t offset, uint8_t *data, size_t length)
+{
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    /* The hardware has slots 0-15 */
+    if (slot > 15)
+    {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    ASSERT_SUCCESS_PSA(atecc608a_init());
+    ASSERT_SUCCESS(atcab_read_bytes_zone(ATCA_ZONE_DATA, slot, offset, data, length));
 
 exit:
     atecc608a_deinit();

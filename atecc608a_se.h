@@ -26,7 +26,8 @@
 #include "psa/crypto_se_driver.h"
 #include "atca_basic.h"
 
-extern psa_drv_se_info_t atecc608a_drv_info;
+#define PSA_ATECC608A_LIFETIME 0xf0
+extern psa_drv_se_t atecc608a_drv_info;
 
 psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret);
 

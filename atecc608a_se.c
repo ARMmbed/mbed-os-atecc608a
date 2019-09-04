@@ -221,11 +221,10 @@ static psa_status_t atecc608a_import_public_key(
     ASSERT_SUCCESS(atcab_write_pubkey(key_id, pubkey_for_driver((uint8_t *) data)));
 
     if (bits != NULL) {
-        /* The 64-byte key is written as 72 bytes. See atcab_write_pubkey() for
-         * why 72 bytes. */
-        *bits = PSA_BYTES_TO_BITS(72);
+        /* The 64-byte key is stored in the SE as 72 bytes, but we return 64 as
+         * the actual key size. */
+        *bits = PSA_BYTES_TO_BITS(64);
     }
-
 exit:
     atecc608a_deinit();
     return status;

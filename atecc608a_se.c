@@ -268,9 +268,7 @@ static psa_status_t atecc608a_generate_key(
         ASSERT_SUCCESS(atcab_genkey(key_id, NULL));
     }
 
-    if (pubkey_length != NULL) {
-        *pubkey_length = 1 + ATCA_PUB_KEY_SIZE;
-    }
+    *pubkey_length = 1 + ATCA_PUB_KEY_SIZE;
 
 exit:
     atecc608a_deinit();

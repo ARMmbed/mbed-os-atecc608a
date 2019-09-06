@@ -441,10 +441,10 @@ static psa_drv_se_key_management_t atecc608a_key_management = {
 
 psa_drv_se_t atecc608a_drv_info = {
     .key_management = &atecc608a_key_management,
-    .mac = 0,
-    .cipher = 0,
+    .mac = NULL,
+    .cipher = NULL,
     .asymmetric = &atecc608a_asymmetric,
-    .aead = 0,
-    .derivation = 0,
+    .aead = NULL,
+    .derivation = NULL,
     .hal_version = PSA_DRV_SE_HAL_VERSION
 };

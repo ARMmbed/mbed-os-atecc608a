@@ -165,6 +165,8 @@ static psa_status_t atecc608a_export_public_key(psa_drv_se_context_t *drv_contex
     const uint16_t slot = key;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
+    (void) drv_context;
+
     if (data_size < key_data_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
@@ -185,6 +187,7 @@ exit:
     atecc608a_deinit();
     return status;
 }
+
 static psa_status_t atecc608a_import_public_key(
     psa_drv_se_context_t *drv_context,
     psa_key_slot_number_t key_slot,
@@ -198,6 +201,7 @@ static psa_status_t atecc608a_import_public_key(
     psa_key_type_t type = psa_get_key_type(attributes);
     psa_algorithm_t alg = psa_get_key_algorithm(attributes);
 
+    (void) drv_context;
     ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
     /* Check if the key has a size of 65 {0x04, X, Y}. */
@@ -241,6 +245,7 @@ static psa_status_t atecc608a_generate_key(
     psa_key_type_t type = psa_get_key_type(attributes);
     size_t bits = psa_get_key_bits(attributes);
 
+    (void) drv_context;
     /* The hardware has slots 0-15 */
     if (key_slot > 15) {
         return PSA_ERROR_INVALID_ARGUMENT;
@@ -288,6 +293,7 @@ static psa_status_t atecc608a_asymmetric_sign(psa_drv_se_context_t *drv_context,
     const uint16_t key_id = key_slot;
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
+    (void) drv_context;
     /* The driver can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY) {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -332,6 +338,7 @@ psa_status_t atecc608a_asymmetric_verify(psa_drv_se_context_t *drv_context,
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
     bool is_verified = false;
 
+    (void) drv_context;
     ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
 
     /* The driver can only do randomized ECDSA on SHA-256 */
@@ -399,6 +406,9 @@ static psa_status_t atecc608a_validate_slot_number(
     psa_key_slot_number_t key_slot)
 {
     psa_key_type_t type = psa_get_key_type(attributes);
+    (void) drv_context;
+    (void) method;
+
     if (PSA_KEY_TYPE_IS_ECC_KEY_PAIR(type)) {
         if (key_slot <= 15) {
             return PSA_SUCCESS;
@@ -418,6 +428,12 @@ static psa_status_t atecc608a_allocate_key(
     psa_key_creation_method_t method,
     psa_key_slot_number_t *key_slot)
 {
+    (void) drv_context;
+    (void) persistent_data;
+    (void) attributes;
+    (void) method;
+    (void) key_slot;
+
     return PSA_SUCCESS;
 }
 

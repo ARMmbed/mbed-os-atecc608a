@@ -418,6 +418,9 @@ static psa_status_t atecc608a_allocate_key(
     (void) method;
     (void) key_slot;
 
+    /* TODO - this function is not implemented yet. It will contain
+       persistent data handling to ensure that a single slot
+       will not be allocated twice. */
     return PSA_SUCCESS;
 }
 

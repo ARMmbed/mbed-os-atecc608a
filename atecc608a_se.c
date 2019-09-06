@@ -125,13 +125,13 @@ psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret)
  * format for pubkeys is 0x04 + x + y. Always use a pubkey buffer in PSA
  * format, with enough space for the PSA format. To translate this buffer for
  * use with cryptoauthlib, use pubkey_for_driver(). To ensure the buffer is in
- * valid PSA format after cryptoauthlib operations, call pubkey_for_psa(). */
+ * valid PSA format after cryptoauthlib operations, call set_psa_pubkey_prefix(). */
 static uint8_t *pubkey_for_driver(uint8_t *data)
 {
     return &data[1];
 }
 
-static void pubkey_for_psa(uint8_t *data)
+static void set_psa_pubkey_prefix(uint8_t *data)
 {
     data[0] = 0x4;
 }
@@ -174,7 +174,7 @@ static psa_status_t atecc608a_export_public_key(psa_drv_se_context_t *drv_contex
     ASSERT_SUCCESS_PSA(atecc608a_init());
 
     ASSERT_SUCCESS(atcab_get_pubkey(slot, pubkey_for_driver(p_data)));
-    pubkey_for_psa(p_data);
+    set_psa_pubkey_prefix(p_data);
 
     *p_data_length = key_data_len;
 
@@ -265,7 +265,7 @@ static psa_status_t atecc608a_generate_key(
 
     if (pubkey != NULL) {
         ASSERT_SUCCESS(atcab_genkey(key_id, pubkey_for_driver(pubkey)));
-        pubkey_for_psa(pubkey);
+        set_psa_pubkey_prefix(pubkey);
     } else {
         ASSERT_SUCCESS(atcab_genkey(key_id, NULL));
     }

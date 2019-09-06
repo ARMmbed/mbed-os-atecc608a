@@ -246,10 +246,6 @@ static psa_status_t atecc608a_generate_key(
     size_t bits = psa_get_key_bits(attributes);
 
     (void) drv_context;
-    /* The hardware has slots 0-15 */
-    if (key_slot > 15) {
-        return PSA_ERROR_INVALID_ARGUMENT;
-    }
 
     if (type != PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_CURVE_SECP256R1)) {
         return PSA_ERROR_NOT_SUPPORTED;
@@ -369,11 +365,6 @@ psa_status_t atecc608a_write(uint16_t slot, size_t offset, const uint8_t *data, 
 {
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
 
-    /* The hardware has slots 0-15 */
-    if (slot > 15) {
-        return PSA_ERROR_INVALID_ARGUMENT;
-    }
-
     ASSERT_SUCCESS_PSA(atecc608a_init());
     ASSERT_SUCCESS(atcab_write_bytes_zone(ATCA_ZONE_DATA, slot, offset, data, length));
 
@@ -385,11 +376,6 @@ exit:
 psa_status_t atecc608a_read(uint16_t slot, size_t offset, uint8_t *data, size_t length)
 {
     psa_status_t status = PSA_ERROR_GENERIC_ERROR;
-
-    /* The hardware has slots 0-15 */
-    if (slot > 15) {
-        return PSA_ERROR_INVALID_ARGUMENT;
-    }
 
     ASSERT_SUCCESS_PSA(atecc608a_init());
     ASSERT_SUCCESS(atcab_read_bytes_zone(ATCA_ZONE_DATA, slot, offset, data, length));

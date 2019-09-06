@@ -136,10 +136,10 @@ static void pubkey_for_psa(uint8_t *data)
     data[0] = 0x4;
 }
 
-static psa_status_t is_public_key_slot(uint16_t key_slot)
+static bool is_public_key_slot(uint16_t key_slot)
 {
     /* Keys 8 to 15 can store public keys. Slots 1-7 are too small. */
-    return ((key_slot >= 8 && key_slot <= 15) ? PSA_SUCCESS : PSA_ERROR_INVALID_ARGUMENT);
+    return (key_slot >= 8 && key_slot <= 15);
 }
 
 psa_status_t atecc608a_init()
@@ -202,7 +202,9 @@ static psa_status_t atecc608a_import_public_key(
     psa_algorithm_t alg = psa_get_key_algorithm(attributes);
 
     (void) drv_context;
-    ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
+    if (!is_public_key_slot(key_id)) {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
 
     /* Check if the key has a size of 65 {0x04, X, Y}. */
     if (data_length != PSA_KEY_EXPORT_MAX_SIZE(PSA_KEY_TYPE_ECC_PUBLIC_KEY(
@@ -333,7 +335,9 @@ psa_status_t atecc608a_asymmetric_verify(psa_drv_se_context_t *drv_context,
     bool is_verified = false;
 
     (void) drv_context;
-    ASSERT_SUCCESS_PSA(is_public_key_slot(key_id));
+    if (!is_public_key_slot(key_id)) {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
 
     /* The driver can only do randomized ECDSA on SHA-256 */
     if (alg != PSA_ALG_ECDSA(PSA_ALG_SHA_256) && alg != PSA_ALG_ECDSA_ANY) {

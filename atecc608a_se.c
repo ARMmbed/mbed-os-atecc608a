@@ -387,12 +387,14 @@ exit:
 
 static psa_status_t atecc608a_validate_slot_number(
     psa_drv_se_context_t *drv_context,
+    void *persistent_data,
     const psa_key_attributes_t *attributes,
     psa_key_creation_method_t method,
     psa_key_slot_number_t key_slot)
 {
     psa_key_type_t type = psa_get_key_type(attributes);
     (void) drv_context;
+    (void) persistent_data;
     (void) method;
 
     if (PSA_KEY_TYPE_IS_ECC_KEY_PAIR(type)) {

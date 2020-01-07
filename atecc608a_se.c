@@ -62,8 +62,8 @@
 
 static ATCAIfaceCfg atca_iface_config = {
     .iface_type = ATCA_I2C_IFACE,
-    .devtype = ATECC508A,
-    .atcai2c.slave_address = 0xC0,
+    .devtype = MBED_CONF_MBED_OS_ATECC608A_I2C_IFACE_DEVTYPE,
+    .atcai2c.slave_address = MBED_CONF_MBED_OS_ATECC608A_I2C_IFACE_SLAVE_ADDRESS,
     .atcai2c.bus = 2,
     .atcai2c.baud = 400000,
     .wake_delay = 1500,

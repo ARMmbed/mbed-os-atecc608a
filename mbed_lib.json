@@ -1,0 +1,13 @@
+{
+    "name": "mbed-os-atecc608a",
+    "config": {
+        "i2c-iface-devtype": {
+            "help": "ATCA I2C device type",
+            "value": "ATECC508A"
+        },
+        "i2c-iface-slave_address": {
+            "help": "ATCA I2C slave address",
+            "value": "0xC0"
+        }
+    }
+}

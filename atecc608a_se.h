@@ -27,6 +27,7 @@
 #include "atca_basic.h"
 
 #define PSA_ATECC608A_LIFETIME 0xf0
+#define PSA_ATECC608A_LOCATION 0x01
 extern psa_drv_se_t atecc608a_drv_info;
 
 psa_status_t atecc608a_to_psa_error(ATCA_STATUS ret);
